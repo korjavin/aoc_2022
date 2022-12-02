@@ -8,6 +8,14 @@ enum FightResult {
 }
 
 impl FightResult {
+    fn new(x:String) -> Result<FightResult,String>{
+        match x.as_str() {
+             "X" => Ok(FightResult::Loss),
+             "Y" => Ok(FightResult::Draw),
+             "Z" => Ok(FightResult::Win),
+            &_ => Err(x),
+        }
+    }
     fn score (&self) -> i32 {
         match self {
             FightResult::Win => 6,
@@ -27,9 +35,9 @@ enum Move {
 impl Move {
     fn new(x:String) -> Result<Move,String>{
         match x.as_str() {
-            "A"| "X" => Ok(Move::Rock),
-            "B"| "Y" => Ok(Move::Paper),
-            "C"| "Z" => Ok(Move::Scissors),
+            "A" => Ok(Move::Rock),
+            "B" => Ok(Move::Paper),
+            "C" => Ok(Move::Scissors),
             &_ => Err(x),
         }
     }
@@ -47,6 +55,7 @@ impl Move {
 struct Battle {
     my : Move,
     his: Move,
+    result: FightResult,
 }
 
 impl Battle {
@@ -54,11 +63,29 @@ impl Battle {
         let mut split =s.split_whitespace();
 
         let his= Move::new(split.next().unwrap().to_string());
-        let my = Move::new(split.next().unwrap().to_string());
+        let result= FightResult::new(split.next().unwrap().to_string());
+        let my= match result.as_ref().unwrap() {
+            FightResult::Win=>match his.as_ref().unwrap(){
+                Move::Paper=> Move::Scissors,
+                Move::Scissors=> Move::Rock,
+                Move::Rock=>Move::Paper,
+            }
+            FightResult::Loss=>match his.as_ref().unwrap() {
+                Move::Rock => Move::Scissors,
+                Move::Paper => Move::Rock,
+                Move::Scissors=>Move::Paper,
+            },
+            FightResult::Draw=>match his.as_ref().unwrap() { // borrow checker
+                Move::Rock => Move::Rock,
+                Move::Paper => Move::Paper,
+                Move::Scissors=>Move::Scissors,
+            },
+        };
 
         Battle{
-            my: my.unwrap(),
-            his: his.unwrap()
+            my: my,
+            his: his.unwrap(),
+            result: result.unwrap()
         }
     }
     fn result(&self) -> FightResult {
@@ -90,7 +117,9 @@ fn main() {
     let mut score = 0;
     for line in stdin.lock().lines() {
         let line_val = line.unwrap();
-        score+=Battle::new(line_val).score()
+        let b=Battle::new(line_val);
+        println!("{:?}",b);
+        score+=b.score()
     }
     println!("score: {}", score)
 }
