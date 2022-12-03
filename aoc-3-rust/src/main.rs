@@ -30,7 +30,7 @@ fn common(s1: &String, s2: &String) -> char {
     return common;
 }
 
-fn common3(s1: &String, s2: &String, s3: &String) -> char {
+fn common3(s1: &str, s2: &str, s3: &str) -> char {
     let mut common = 'a';
     for i in s1.chars() {
         if s2.contains(i) {
@@ -48,17 +48,16 @@ fn main() {
     let mut sum = 0;
     let mut counter =0;
     let mut lines : [String; 3] =["".to_string(),"".to_string(),"".to_string()];
-    for line in stdin.lock().lines() {
-        let val = line.unwrap();
-        lines[counter]=val;
-        counter+=1;
-        if counter>2 {
-        let common = common3(&lines[0], &lines[1], &lines[2]);
+    for line in stdin.lock().lines().collect::<Vec<_>>().chunks(3) {
+        let common = common3(
+            line[0].as_ref().unwrap(),
+            line[1].as_ref().unwrap(),
+            line[2].as_ref().unwrap()
+        );
         let ord = priority(common);
         print!("{}-{}-", common, ord);
         sum += ord;
         counter=0;
-        }
     }
     println!("score: {}", sum)
 }
