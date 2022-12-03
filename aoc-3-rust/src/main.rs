@@ -72,7 +72,7 @@ fn main() {
     let mut sum = 0;
     
     for line in stdin.lock().lines().collect::<Vec<_>>().chunks(3) {
-        let common = common3(
+        let common = common3_hot(
             line[0].as_ref().unwrap(),
             line[1].as_ref().unwrap(),
             line[2].as_ref().unwrap()
