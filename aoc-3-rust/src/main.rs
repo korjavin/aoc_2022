@@ -43,6 +43,30 @@ fn common3(s1: &str, s2: &str, s3: &str) -> char {
     return common;
 }
 
+fn bit_encode(a: char) -> u64 {
+    let code = a as u32;
+    let out = if code > 'Z' as u32 {
+        1 + code - 'a' as u32
+    } else {
+        27 + code - 'A' as u32
+    };
+
+    1u64 << out
+}
+
+fn string_to_one_hot(input: &str) -> u64 {
+    input.chars().map(bit_encode).reduce(|i, j| i | j).unwrap()
+}
+
+fn one_hot_to_num(input: u64) -> i32 {
+    f64::log2(input as f64) as i32
+}
+
+fn common3_hot(s1: &str, s2: &str, s3: &str) -> char {
+    let common_bit= string_to_one_hot(s1) & string_to_one_hot(s2) & string_to_one_hot(s3);
+    std::char::from_u32(one_hot_to_num(common_bit)  as u32).unwrap()
+}
+
 fn main() {
     let stdin = io::stdin();
     let mut sum = 0;
