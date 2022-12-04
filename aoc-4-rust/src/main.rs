@@ -10,6 +10,12 @@ impl Range {
     fn Contains (&self, other: &Range) -> bool {
         return self.begin<= other.begin && self.end>=other.end 
     }
+    fn Overlaps (&self, other: &Range) -> bool {
+        return
+         self.end >= other.begin && self.begin<=other.begin 
+
+
+    }
     fn new(s: &str) -> Range {
         let mut sp = s.split("-");
         let r1 = sp.next().unwrap();
@@ -48,6 +54,32 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_Overlap() -> Result<(), String> {
+        let r1 = Range{begin:2, end: 4};
+        let r2 = Range{begin:6, end: 8};
+
+        let b1=r1.Overlaps(&r2);
+        assert_eq!(b1, false);
+
+        assert_eq!(
+            Range{begin: 7, end: 7}
+            .Overlaps(
+                &Range{begin:7, end: 12}),
+                true
+        );
+
+        assert_eq!(
+            Range{begin: 1, end: 7}
+            .Overlaps(
+                &Range{begin:7, end: 7}),
+                true
+        );
+        
+
+        Ok(())
+    }
 }
 
 fn main() {
@@ -59,7 +91,7 @@ fn main() {
         let mut sp = line_val.split(",");
         let r1 = Range::new(sp.next().unwrap());
         let r2 = Range::new(sp.next().unwrap());
-        if r1.Contains(&r2) || r2.Contains(&r1) {
+        if r1.Overlaps(&r2) || r2.Overlaps(&r1) {
             score +=1 ;
         }
     }
