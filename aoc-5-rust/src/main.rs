@@ -57,7 +57,7 @@ fn move_first_chars( mut lines: Vec<String>, (a, b, c): (i32,i32,i32)) -> Vec<St
     // println!("chars_to_move: {:?}", chars_to_move);
 
     // convert chars_to_move to string
-    let string_to_move = chars_to_move.into_iter().rev().collect::<String>();
+    let string_to_move = chars_to_move.into_iter().collect::<String>();
     
     lines[c as usize-1]= format!("{}{}", string_to_move, lines[c as usize-1]);
 
