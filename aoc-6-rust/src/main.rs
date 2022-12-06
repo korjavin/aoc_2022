@@ -18,6 +18,8 @@ fn test_is_unique() {
     assert!(!is_unique("abccd"));
 }
 
+const messagelen : usize=14;
+
 
 fn main() {
     let stdin = io::stdin();
@@ -28,10 +30,10 @@ fn main() {
     };
     
     println!("datastream: {}", datastream.len());
-    for i in 0..datastream.len()-4 {
-        let sub = &datastream[i..i+4];
+    for i in 0..datastream.len()-messagelen {
+        let sub = &datastream[i..i+messagelen];
         if is_unique(sub) {
-            println!("{}, {}",sub,i+4);
+            println!("{}, {}",sub,i+messagelen);
             die!();
         } 
     }
