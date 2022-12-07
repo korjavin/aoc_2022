@@ -1,91 +1,68 @@
 #![allow(dead_code)]
 use std::io::{self, BufRead};
 
-// Structure to hold directory name and all its files and subdirectories
-// #[derive( Clone)]
-struct Dir<'a> {
-    name: String,
-    files: Vec<File>,
-    subdirs: Vec<Dir<'a>>,
-    parent: Option<Box<&'a Dir<'a>>>,
+// Recursive struct that contains name, ref to parent and integer and a vector of children
+#[derive(Debug)]
+struct Node<'a> {
+    name: &'a str,
+    parent: Option<&'a mut Node<'a>>,
+    value: i32,
+    children: Vec<&'a Node<'a>>,
 }
-
-impl<'a> Dir<'a> {
-    fn new(name: String, dir: Option<Box<&'a Dir>>) ->  &'static Dir<'a> {
-        &Dir {
+// constructor for Node
+impl<'a> Node<'a> {
+    fn new(name: &'a str, parent: Option<&'a mut Node<'a>>, value: i32) -> Node<'a> {
+        Node {
             name: name,
-            files: Vec::new(),
-            subdirs: Vec::new(),
-            parent: dir,
+            parent: parent,
+            value: value,
+            children: Vec::new(),
         }
     }
-    // function to add a file to Dir
-    fn add_file(&mut self, file: File) {
-        self.files.push(file);
+    // add a child to the node
+    fn add_child(&mut self, child: &'a Node<'a>) {
+        self.children.push(child);
     }
-    // function to add a Dir to Dir
-    fn add_dir(&'a mut self, dir: Dir<'a>) {
-        self.subdirs.push(dir);
+    // add a value to the node
+    fn add_value(&mut self, value: i32) {
+        self.value += value;
     }
-    // function to calculate sum of size of all files in Dir
-    fn size(&self) -> u64 {
-        let mut size = 0;
-        for file in &self.files {
-            size += file.size;
+    // sum all the children values
+    fn sum(&self) -> i32 {
+        let mut sum = 0;
+        for child in &self.children {
+            sum += child.value;
         }
-        for dir in &self.subdirs {
-            size += dir.size();
-        }
-        size
+        sum+self.value
     }
 }
-
 #[test]
-fn test_dir_size() {
-    let mut dir = Dir::new("test".to_string(), None::<Box<&Dir>>);
-    dir.add_file(File::new("test1".to_string(), 10));
-    dir.add_file(File::new("test2".to_string(), 20));
-    dir.add_file(File::new("test3".to_string(), 30));
-    assert_eq!(dir.size(), 60);
+// test sum node
+fn test_sum() {
+    let mut node = Node::new("test", None, 1);
+    node.add_value(2);
+    assert_eq!(node.sum(), 3);
+}
+// test add child
+#[test]
+fn test_add_child() {
+    let mut node = Node::new("test", None, 1);
+    let child = Node::new("child", Some(& mut node), 1);
+    node.add_child(&child);
+    assert_eq!(node.children.len(), 1);
 }
 
-fn test_subdir_size() {
-    let mut dir = Dir::new("test".to_string(), None::<Box<&Dir>>);
-    dir.add_file(File::new("test1".to_string(), 10));
-    let mut subdir = Dir::new("test".to_string(), Some(Box::new(&dir)));
-    subdir.add_file(File::new("test2".to_string(), 20));
-    subdir.add_file(File::new("test3".to_string(), 30));
-    assert_eq!(subdir.size(), 50);
-    assert_eq!(dir.size(), 60);
-}
 
-// Structure to hold filename and its size
-struct File {
-    name: String,
-    size: u64,
-}
-
-impl File {
-    fn new(name: String, size: u64) -> File {
-        File {
-            name: name,
-            size: size,
-        }
-    }
-}
 
 fn main() {
-    let mut currdir = Some(Box::new(Dir::new("root".to_string(), None::<Box<&Dir>>)));
-    for line in io::stdin().lock().lines() {
+    // Read stdin line by line and detect if it starts with $.
+    let stdin = io::stdin();
+    for line in stdin.lock().lines() {
+        let line = line.unwrap();
+        if line.starts_with("$") {
+            println!("Found a command: {}", line);
 
-        // match if line content is started from $ cd then create a new Dir and set it as subdir to
-        // current dir
-        if line.unwrap().starts_with("$ cd") {
-            // let dir = currdir.add_dir(Dir::new(line.unwrap().split(" ").nth(2).unwrap().to_string(), currdir));
         }
-        
-
     }
 
-    println!("Hello, world!");
 }
