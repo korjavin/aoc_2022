@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -27,10 +28,10 @@ func (d *Dir) addChild(child *Dir) {
 }
 
 // Sum all the sum integers of all directories in the tree
-func sumAll(dir *Dir) int {
+func (dir *Dir) sumAll() int {
 	sum := dir.sum
 	for _, child := range dir.children {
-		sum += sumAll(child)
+		sum += child.sumAll()
 	}
 	return sum
 }
@@ -40,10 +41,35 @@ func printAll(dir *Dir, depth int) {
 	if dir == nil {
 		return
 	}
-	fmt.Printf("---%s%s%d\n", strings.Repeat(" ", depth), dir.name, dir.sum)
+	fmt.Printf("---%s%s%d\n", strings.Repeat(" ", depth), dir.name, dir.sumAll())
 	for _, child := range dir.children {
 		printAll(child, depth+1)
 	}
+}
+
+// Parent returns the parent directory of the tree
+func (d Dir) Parent() *Dir {
+	for d.parent != nil {
+		d = *d.parent
+	}
+
+	return &d
+}
+
+// Traverse tree and print all directories and their sumAll if the sumAll < 10000
+func sumAllFiltered(dir *Dir, depth int) int {
+	if dir == nil {
+		return 0
+	}
+	sum := 0
+	if dir.sumAll() <= 100000 {
+		// fmt.Printf("---%s%s%d\n", strings.Repeat(" ", depth), dir.name, dir.sumAll())
+		sum += dir.sumAll()
+	}
+	for _, child := range dir.children {
+		sum += sumAllFiltered(child, depth+1)
+	}
+	return sum
 }
 
 func main() {
@@ -52,7 +78,6 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		line := scanner.Text()
-		printAll(curdur, 0)
 		switch {
 		case strings.HasPrefix(line, "$ cd"):
 			// If line starts with $ cd, then we are changing directory
@@ -67,9 +92,8 @@ func main() {
 				if curdur != nil {
 					// If we are changing to child directory, then we add child directory to parent directory
 					curdur.addChild(dir)
-				} else {
-					curdur = dir
 				}
+				curdur = dir
 			}
 		case strings.HasPrefix(line, "$ ls"):
 			// If line starts with $ ls, then we are listing all directories in current directory
@@ -87,4 +111,29 @@ func main() {
 			curdur.sum += sum
 		}
 	}
+	curdur = curdur.Parent()
+	sum := curdur.sumAll()
+	const fs = 70000000
+	const need = 30000000
+	freespace := fs - sum
+	needdelete := need - freespace
+
+	sizes := curdur.ChildSizes()
+	sort.Ints(sizes)
+
+	for i := len(sizes) - 1; i > 0; i-- {
+		if sizes[i] < needdelete {
+			fmt.Println(sizes[i+1])
+			return
+		}
+	}
+}
+
+func (d *Dir) ChildSizes() []int {
+	var sizes []int
+	sizes = append(sizes, d.sumAll())
+	for _, child := range d.children {
+		sizes = append(sizes, child.ChildSizes()...)
+	}
+	return sizes
 }
