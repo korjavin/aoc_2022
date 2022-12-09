@@ -32,13 +32,24 @@ impl Point {
     fn distance(&self, other: &Point) -> i32 {
         (self.x - other.x).abs() + (self.y - other.y).abs()
     }
+    // copy
+    fn copy(&self) -> Point {
+        Point {
+            x: self.x,
+            y: self.y,
+        }
+    }
 }
 
-fn Move(p: &mut Point, t: &mut Point, d: &Direction, n: i32, visited: &mut HashMap<Point, i32>) {
+fn Move(head: &mut Point, t: & mut Vec::<Point>, d: &Direction, n: i32, visited: &mut HashMap<Point, i32>) {
     for i in 0..n {
-        MoveOne(p, d);
-        MoveTail(t, p);
-        visited.insert(*t, 0);
+        MoveOne(head, d);
+        MoveTail(& mut t[0], &head.copy());
+        for i in 1..t.len() {
+            let prevtail= t[i-1].copy();
+            MoveTail( & mut t[i], &prevtail );
+        }
+        visited.insert(*t.last().unwrap(), 0);
     }
 }
 
@@ -142,16 +153,21 @@ fn print_visited(visited: &HashMap<Point, i32>, size: i32    ) {
 }
 
 
+const TailSize: i32 = 9;
 fn main() {
     let input = read_input();
 
     let mut PointHead = Point { x: 0, y: 0 };
-    let mut PointTail = Point { x: 0, y: 0 };
+    let mut PointTailVec = Vec::new();
+    for _i in 0..TailSize {
+        PointTailVec.push( Point { x: 0, y: 0 });
+    }
+
 
     let mut visited = HashMap::new();
 
     for m in input {
-        Move(&mut PointHead, &mut PointTail, &m.0, m.1, & mut visited);
+        Move(&mut PointHead, & mut PointTailVec, &m.0, m.1, & mut visited);
         print_visited(&visited, 10);
     }
     println!("{:?}", visited.len());
