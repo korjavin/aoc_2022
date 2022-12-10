@@ -9,14 +9,15 @@ impl Counter {
     fn new() -> Counter {
         Counter { count: 0, tick: 1 }
     }
-    fn tick(&mut self, x : i32) {
+    fn tick(&mut self, x: i32) {
         self.tick += 1;
-        if (self.tick-20) % 40==0 {
+        if (self.tick - 20) % 40 == 0 {
             // dbg!(x);
-            let add = x*self.tick;
+            let add = x * self.tick;
             self.count += add;
             // dbg!(self.tick,self.count,add);
         }
+    visualize(self.tick-1, x);
     }
 }
 #[test]
@@ -34,11 +35,27 @@ fn test_counter_tick() {
         counter.tick(2);
     }
     assert_eq!(counter.tick, 41);
-    assert_eq!(counter.count, 20+40*2);
+    assert_eq!(counter.count, 20 + 40 * 2);
 }
 
+const size_x: usize = 40;
+const size_y: usize = 6;
 
+fn visualize(tick: i32, x: i32) {
 
+    let x_coord = (tick) % size_x as i32;
+
+    if x_coord == 0 {
+        println!();
+    }
+
+    if (x_coord-x).abs() < 2 {
+        print!("██");
+    } else {
+        print!("░░");
+    }
+
+}
 
 fn main() {
     let mut x: i32 = 1;
@@ -52,7 +69,7 @@ fn main() {
                 counter.tick(x);
             }
             Some("addx") => {
-                let (_ , mut steps) = line.split_at(5);
+                let (_, mut steps) = line.split_at(5);
                 steps = steps.trim();
                 let steps = steps.parse::<i32>().unwrap();
                 // dbg!(steps);
