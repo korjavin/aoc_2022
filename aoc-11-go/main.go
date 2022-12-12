@@ -52,12 +52,12 @@ func WorrisomeLevelFactory(level int, oper operation, operand int) func(int) int
 	return func(i int) int {
 		switch oper {
 		case PLUS:
-			return (i + operand) / 3
+			return (i + operand)
 		case MULT:
 			if operand == 0 {
-				return (i * i) / 3
+				return (i * i)
 			}
-			return (i * operand) / 3
+			return (i * operand)
 		}
 		panic("Unknown operation")
 		return 0
@@ -110,6 +110,8 @@ func main() {
 	var operStr string
 	var oper operation
 
+	divisor := 1
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		switch {
@@ -135,6 +137,7 @@ func main() {
 			log.Printf("Operation: line %s  %s %d", line, operStr, operand)
 		case strings.HasPrefix(line, "  Test: divisible by"):
 			_, _ = fmt.Sscanf(line, "  Test: divisible by %d", &div)
+			divisor = divisor * div
 		case strings.HasPrefix(line, "    If true: throw to monkey"):
 			_, _ = fmt.Sscanf(line, "    If true: throw to monkey %d", &left)
 		case strings.HasPrefix(line, "    If false: throw to monkey"):
@@ -146,7 +149,8 @@ func main() {
 	monkeys[number] = mnk
 	monkeyarr = append(monkeyarr, mnk)
 	counter := map[int]int{}
-	for round := 0; round < 20; round++ {
+
+	for round := 0; round < 10000; round++ {
 		for n, m := range monkeyarr {
 			fmt.Printf("Monkey %d: %v\n", n, m.items)
 			for range m.items {
@@ -156,7 +160,7 @@ func main() {
 				}
 				counter[n] = counter[n] + 1
 				log.Printf("Monkey %d: %d  %d -> Monkey %d", n, olditem, item, throw_to)
-				monkeys[throw_to].AddItem(item)
+				monkeys[throw_to].AddItem(item % divisor)
 			}
 		}
 	}
@@ -168,5 +172,6 @@ func main() {
 		arr = append(arr, c)
 	}
 	sort.Ints(arr)
-	fmt.Printf("%score=\n", arr[len(arr)-2]*arr[len(arr)-1])
+	fmt.Printf("%v\n", arr)
+	fmt.Printf("score=%d\n", arr[len(arr)-2]*arr[len(arr)-1])
 }
