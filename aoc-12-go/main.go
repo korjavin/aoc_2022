@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -82,10 +83,35 @@ func (q *queue) getDist(n *node) int {
 	return 100000
 }
 
+func lenOfPath(end *node) int {
+	var l int
+	for end != nil {
+		l++
+		end = end.prev
+	}
+	return l - 1
+}
+
+// set all prev nodes to nil
+func (n *node) resetPrev(visited map[*node]bool) {
+	n.prev = nil
+	if visited == nil {
+		visited = map[*node]bool{n: true}
+	}
+	for _, e := range n.edge {
+		if !visited[e] {
+			visited[e] = true
+			e.resetPrev(visited)
+		}
+	}
+}
+
 // dijkstra finds the shortest path from the start node to the end node.
 
 func Dijkstra(start, end *node) bool {
+	start.resetPrev(nil)
 	queue := newQueue(start, 0)
+
 	for {
 		u := queue.get()
 		if u == nil {
@@ -160,9 +186,9 @@ func (n *node) findNode(x, y int) *node {
 }
 
 // buildGraph builds a graph from the given matrix.
-func buildGraph(matrix [][]int, start, end [2]int) (*node, *node) {
+func buildGraph(matrix [][]int, end [2]int) ([]*node, *node) {
 	var endNode *node
-	var startNode *node
+	var startNode []*node
 	// build nodes
 	nodes := make([][]*node, len(matrix))
 	for i := range nodes {
@@ -173,9 +199,9 @@ func buildGraph(matrix [][]int, start, end [2]int) (*node, *node) {
 				endNode = nodes[i][j]
 				endNode.height = 'z'
 			}
-			if i == start[0] && j == start[1] {
-				startNode = nodes[i][j]
-				startNode.height = 'a'
+			if matrix[i][j] == 'S' || matrix[i][j] == 'a' {
+				startNode = append(startNode, nodes[i][j])
+				nodes[i][j].height = 'a'
 			}
 		}
 	}
@@ -234,13 +260,13 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	rowN := 0
 	var end [2]int
-	var start [2]int
+	var start [][2]int
 	for scanner.Scan() {
 		row := strings.Split(scanner.Text(), "")
 		matrix = append(matrix, row)
 		for i, c := range row {
-			if c == "S" {
-				start = [2]int{rowN, i}
+			if c == "S" || c == "a" {
+				start = append(start, [2]int{rowN, i})
 			}
 			if c == "E" {
 				end = [2]int{rowN, i}
@@ -249,26 +275,21 @@ func main() {
 		rowN++
 	}
 	intMatrix := transformMatrix(matrix)
-	startNode, endNode := buildGraph(intMatrix, start, end)
+	startNodes, endNode := buildGraph(intMatrix, end)
 
-	fmt.Printf("start: %v", startNode.coord)
 	fmt.Printf("end: %v", endNode.coord)
 
-	// find some path
-	found := Dijkstra(startNode, endNode)
-	length := 0
-	if found {
-		for n := endNode; n != nil; n = n.prev {
-			fmt.Printf("%v ", n.height)
-			length++
+	lens := []int{}
+	for _, startNode := range startNodes {
+		// find some path
+		fmt.Printf("start: %v", startNode.coord)
+
+		found := Dijkstra(startNode, endNode)
+		if found {
+			fmt.Printf("\nlength: %d", lenOfPath(endNode))
+			lens = append(lens, lenOfPath(endNode))
 		}
 	}
-	fmt.Printf("\nlength: %d", length-1)
-
-	// find all paths
-	// var paths [][]*node
-	// startNode.findAllPaths(endNode, nil, &paths, somelen)
-	// fmt.Println(len(paths))
-	// fmt.Println(len(shortestPath(&paths)) - 1)
-	//
+	sort.Ints(lens)
+	fmt.Printf("\nshortest: %d", lens[0])
 }
