@@ -12,6 +12,7 @@ type node struct {
 	coord  [2]int
 	height int
 	edge   []*node
+	prev   *node
 }
 
 // constructor
@@ -19,7 +20,13 @@ func newNode(x, y, h int) *node {
 	return &node{
 		coord:  [2]int{x, y},
 		height: h,
+		prev:   nil,
 	}
+}
+
+// set prev node
+func (n *node) setPrev(prev *node) {
+	n.prev = prev
 }
 
 // addEdge adds an edge to the node.
@@ -27,13 +34,84 @@ func (n *node) addEdge(e *node) {
 	n.edge = append(n.edge, e)
 }
 
-// findAllPaths finds all paths from the node to the destination.
-func (n *node) findAllPaths(dest *node, path []*node, paths *[][]*node) {
-	max := shortestPath(paths)
-	path = append(path, n)
-	if max != nil && len(path) > len(max) { // We already know better
-		return
+// Type queue with priority.
+type queue struct {
+	nodes []*node
+	dist  map[*node]int
+}
+
+// get node with the lowest priority.
+func (q *queue) get() *node {
+	if len(q.nodes) == 0 {
+		return nil
 	}
+	var min int
+	for i := range q.nodes {
+		if q.dist[q.nodes[i]] < q.dist[q.nodes[min]] {
+			min = i
+		}
+	}
+	n := q.nodes[min]
+	q.nodes = append(q.nodes[:min], q.nodes[min+1:]...)
+	return n
+}
+
+func newQueue(n *node, p int) *queue {
+	return &queue{
+		nodes: []*node{n},
+		dist:  map[*node]int{n: p},
+	}
+}
+
+// add to queue
+func (q *queue) add(n *node, p int) {
+	if _, ok := q.dist[n]; !ok {
+		q.nodes = append(q.nodes, n)
+		q.dist[n] = p
+	}
+	if p < q.dist[n] {
+		q.dist[n] = p
+	}
+}
+
+// get dist from queue for a node
+func (q *queue) getDist(n *node) int {
+	if _, ok := q.dist[n]; ok {
+		return q.dist[n]
+	}
+	return 100000
+}
+
+// dijkstra finds the shortest path from the start node to the end node.
+
+func Dijkstra(start, end *node) bool {
+	queue := newQueue(start, 0)
+	for {
+		u := queue.get()
+		if u == nil {
+			return false
+		}
+		for _, v := range u.edge {
+			if v == end {
+				end.setPrev(u)
+				return true
+			}
+			queue.add(v, queue.getDist(v))
+		}
+		for _, v := range u.edge {
+			dist := queue.getDist(u) + 1
+			if dist < queue.getDist(v) {
+				v.setPrev(u)
+				queue.add(v, dist)
+			}
+		}
+	}
+	return false
+}
+
+// findAllPaths finds all paths from the node to the destination.
+func (n *node) findAllPaths(dest *node, path []*node, paths *[][]*node, somelen int) {
+	path = append(path, n)
 	if n == dest {
 		*paths = append(*paths, path)
 		fmt.Printf("\nFound path len %d", len(path))
@@ -43,9 +121,16 @@ func (n *node) findAllPaths(dest *node, path []*node, paths *[][]*node) {
 		fmt.Println()
 		return
 	}
+	max := shortestPath(paths)
+	if max != nil && len(path) > len(max) { // We already know better
+		return
+	}
+	if len(path) > somelen { // too bad already
+		return
+	}
 	for _, e := range n.edge {
 		if !e.existsInPath(path) {
-			e.findAllPaths(dest, path, paths)
+			e.findAllPaths(dest, path, paths, somelen)
 		}
 	}
 }
@@ -168,12 +253,22 @@ func main() {
 
 	fmt.Printf("start: %v", startNode.coord)
 	fmt.Printf("end: %v", endNode.coord)
-	// find all paths
-	var paths [][]*node
-	startNode.findAllPaths(endNode, nil, &paths)
-	fmt.Println(len(paths))
-	fmt.Println(len(shortestPath(&paths)) - 1)
-	for _, n := range shortestPath(&paths) {
-		fmt.Printf("[%d,%d](%v) ", n.coord[0], n.coord[1], string(rune(n.height)))
+
+	// find some path
+	found := Dijkstra(startNode, endNode)
+	length := 0
+	if found {
+		for n := endNode; n != nil; n = n.prev {
+			fmt.Printf("%v ", n.height)
+			length++
+		}
 	}
+	fmt.Printf("\nlength: %d", length-1)
+
+	// find all paths
+	// var paths [][]*node
+	// startNode.findAllPaths(endNode, nil, &paths, somelen)
+	// fmt.Println(len(paths))
+	// fmt.Println(len(shortestPath(&paths)) - 1)
+	//
 }
