@@ -212,9 +212,14 @@ fn main() {
     let mut idx=0;
     let mut sum = 0;
 
+    let mut input = Vec::new();
+    
     loop {
         match (lines.next(), lines.next()) {
             (Some(a), Some(b)) => {
+
+                input.push(parse(a.as_ref().unwrap().clone().as_str()));
+                input.push(parse(b.as_ref().unwrap().clone().as_str()));
                 idx+=1;
                 if compare_vec_of_elements(parse(a.unwrap().as_str()), parse(b.unwrap().as_str())) {
                     sum+=idx;
@@ -225,5 +230,12 @@ fn main() {
         }
         lines.next();
     }
+    input.sort_by(|a,b| {
+        if compare_vec_of_elements(a,b) {
+            Ordering::Less
+        } else {
+            Ordering::Greater
+        }
+    });
     println!("{}", sum);
 }
