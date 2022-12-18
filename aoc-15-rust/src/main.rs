@@ -1,4 +1,5 @@
 use std::io::{self, BufRead};
+use die::Die;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct Coord {
@@ -71,9 +72,15 @@ impl Board {
         }
         println!();
     }
+    fn clear(&mut self) {
+        for x in 0..self.x {
+            self.cells[x] = Cell::Empty;
+        }
+    }
 }
 
 const SIZE: usize = 4000000;
+// const SIZE: usize = 20;
 fn main() {
     let stdin = io::stdin();
     let mut sensors = Vec::new();
@@ -91,30 +98,33 @@ fn main() {
         };
         sensors.push(pair);
     }
+    dbg!(SIZE);
     dbg!(sensors.len());
+    //
+    // for pair in &sensors {
+    //     dbg!(pair.manhattan_distance());
+    // }
 
     let mut board = Board::new(SIZE);
     for y in 0..SIZE{
         // mark all closed
         // print!("{}", y);
-        board = Board::new(SIZE);
+        board.clear();
         for x in 0..SIZE{
-            let coord = Coord::new(x as i32, y as i32);
             for pair in &sensors {
                 let dist = pair.manhattan_distance();
-                if (coord.x - pair.Sensor.x).abs() + (coord.y - pair.Sensor.y).abs() <= dist
+                if (x as i32 - pair.Sensor.x).abs() + (y as i32 - pair.Sensor.y).abs() <= dist
                     && board.cells[x] == Cell::Empty
                 {
                     board.cells[x] = Cell::Closed;
                 }
             }
+            if board.cells[x] == Cell::Empty {
+                println!("{} {}", x as i32, y as i32);
+                die::die!();
+            }
             // print!("{}", board.cells[x].to_char());
         }
         // println!("");
-        for x in 0..20 {
-            if board.cells[x] == Cell::Empty {
-                println!("{} {}", x as i32, y as i32);
-            }
-        }
     }
 }
