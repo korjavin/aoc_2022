@@ -1,7 +1,7 @@
 use std::io::{self, BufRead};
-use die::Die;
+use std::collections::HashMap;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash )]
 struct Coord {
     x: i32,
     y: i32,
@@ -53,31 +53,68 @@ impl Pair {
             Beacon: Coord::new(self.Beacon.x + direction.x, self.Beacon.y + direction.y),
         }
     }
+    // Fn returns vector of coords just on the border of the pair
+    // where border defined by manhattan distance between sensor and beacon must be equal to
+    // manhattan distance between sensor and point
+    fn get_border(&self) -> Vec<Coord> {
+        let mut result = Vec::new();
+        let distance = self.manhattan_distance();
+        const diff: i32 =1;
+        for x in self.Sensor.x-distance-diff..=self.Sensor.x+distance+diff {
+            let yd = self.Sensor.y + distance - (x - self.Sensor.x).abs()+diff;
+            result.push(Coord::new(x, self.Sensor.y+yd));
+            if yd != 0 {
+                result.push(Coord::new(x, self.Sensor.y-yd));
+            }
+        }
+        result
+    }
 }
 
-struct Board {
-    x: usize,
-    cells: Vec<Cell>,
+#[test]
+// get_border test
+fn test_get_border() {
+    let mut pair = Pair::new(Coord::new(0, 0), Coord::new(1, 1));
+    let mut result = pair.get_border();
+    assert_eq!(
+        result,
+        vec!  [Coord { x: -3, y: 0 }, Coord { x: -2, y: 1 }, Coord { x: -2, y: -1 }, Coord { x: -1, y: 2 }, Coord { x: -1, y: -2 }, Coord { x: 0, y: 3 }, Coord { x: 0, y: -3 }, Coord { x: 1, y: 2 }, Coord { x: 1, y: -2 }, Coord { x: 2, y: 1 }, Coord { x: 2, y: -1 }, Coord { x: 3, y: 0 }],
+    );
+
+    pair = Pair::new(Coord::new(0, 0), Coord::new(2, 2));
+    result = pair.get_border();
+    assert_eq!(
+        result,
+        vec!  [Coord { x: -5, y: 0 }, Coord { x: -4, y: 1 }, Coord { x: -4, y: -1 }, Coord { x: -3, y: 2 }, Coord { x: -3, y: -2 }, Coord { x: -2, y: 3 }, Coord { x: -2, y: -3 }, Coord { x: -1, y: 4 }, Coord { x: -1, y: -4 }, Coord { x: 0, y: 5 }, Coord { x: 0, y: -5 }, Coord { x: 1, y: 4 }, Coord { x: 1, y: -4 }, Coord { x: 2, y: 3 }, Coord { x: 2, y: -3 }, Coord { x: 3, y: 2 }, Coord { x: 3, y: -2 }, Coord { x: 4, y: 1 }, Coord { x: 4, y: -1 }, Coord { x: 5, y: 0 }]
+    );
+
+    pair = Pair::new(Coord::new(0, 0), Coord::new(1, 0));
+    result = pair.get_border();
+    assert_eq!(
+        result,
+        vec!  [Coord { x: -2, y: 0 }, Coord { x: -1, y: 1 }, Coord { x: -1, y: -1 }, Coord { x: 0, y: 2 }, Coord { x: 0, y: -2 }, Coord { x: 1, y: 1 }, Coord { x: 1, y: -1 }, Coord { x: 2, y: 0 }],
+    );
+    pair = Pair::new(Coord::new(0, 0), Coord::new(-1, 0));
+    result = pair.get_border();
+    assert_eq!(
+        result,
+        vec!  [Coord { x: -2, y: 0 }, Coord { x: -1, y: 1 }, Coord { x: -1, y: -1 }, Coord { x: 0, y: 2 }, Coord { x: 0, y: -2 }, Coord { x: 1, y: 1 }, Coord { x: 1, y: -1 }, Coord { x: 2, y: 0 }],
+    );
+    pair = Pair::new(Coord::new(0, 0), Coord::new(0, 1));
+    result = pair.get_border();
+    assert_eq!(
+        result,
+        vec!  [Coord { x: -2, y: 0 }, Coord { x: -1, y: 1 }, Coord { x: -1, y: -1 }, Coord { x: 0, y: 2 }, Coord { x: 0, y: -2 }, Coord { x: 1, y: 1 }, Coord { x: 1, y: -1 }, Coord { x: 2, y: 0 }],
+    );
+
+    pair = Pair::new(Coord::new(5, 0), Coord::new(5, 1));
+    result = pair.get_border();
+    assert_eq!(
+        result,
+        vec!  [Coord { x: 3, y: 0 }, Coord { x: 4, y: 1 }, Coord { x: 4, y: -1 }, Coord { x: 5, y: 2 }, Coord { x: 5, y: -2 }, Coord { x: 6, y: 1 }, Coord { x: 6, y: -1 }, Coord { x: 7, y: 0 }],
+    );
 }
-impl Board {
-    fn new(x: usize) -> Board {
-        Board {
-            x,
-            cells: vec![Cell::Empty; x],
-        }
-    }
-    fn print(&self) {
-        for x in 0..self.x {
-            print!("{}", self.cells[x].to_char());
-        }
-        println!();
-    }
-    fn clear(&mut self) {
-        for x in 0..self.x {
-            self.cells[x] = Cell::Empty;
-        }
-    }
-}
+    
 
 const SIZE: usize = 4000000;
 // const SIZE: usize = 20;
@@ -93,8 +130,8 @@ fn main() {
         let x2 = words[13].parse::<i32>().unwrap();
         let y2 = words[16].parse::<i32>().unwrap();
         let pair = Pair {
-            Sensor: Coord { x, y },
-            Beacon: Coord { x: x2, y: y2 },
+             Sensor: Coord { x, y },
+             Beacon: Coord { x: x2, y: y2 },
         };
         sensors.push(pair);
     }
@@ -105,26 +142,24 @@ fn main() {
     //     dbg!(pair.manhattan_distance());
     // }
 
-    let mut board = Board::new(SIZE);
-    for y in 0..SIZE{
-        // mark all closed
-        // print!("{}", y);
-        board.clear();
-        for x in 0..SIZE{
-            for pair in &sensors {
-                let dist = pair.manhattan_distance();
-                if (x as i32 - pair.Sensor.x).abs() + (y as i32 - pair.Sensor.y).abs() <= dist
-                    && board.cells[x] == Cell::Empty
-                {
-                    board.cells[x] = Cell::Closed;
-                }
-            }
-            if board.cells[x] == Cell::Empty {
-                println!("{} {}", x as i32, y as i32);
-                die::die!();
-            }
-            // print!("{}", board.cells[x].to_char());
+
+    let mut counters = HashMap::new();
+
+    for pair in &sensors {
+        for c in pair.get_border() {
+            let counter = counters.entry(c).or_insert(0);
+            *counter += 1;
         }
-        // println!("");
     }
+    dbg!(counters.len());
+
+    for (c,v)  in counters {
+        if c.x <= 0 || c.y <= 0 || c.x >= SIZE as i32 || c.y >= SIZE as i32 {
+            continue;
+        }
+        if v> 1 {
+            dbg!(c,v);
+        }
+    }
+
 }
