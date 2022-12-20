@@ -57,13 +57,11 @@ impl Graph {
             println!("Node: {} {}", self.nodes[i].name, self.nodes[i].flow_rate);
             for j in 0..self.nodes.len() {
                 if self.adjacencies[i][j] != 0 {
-                    println!(
-                        "Edge: {} to {}",
-                        self.nodes[i].name, self.nodes[j].name
-                    );
+                    println!("Edge: {} to {}", self.nodes[i].name, self.nodes[j].name);
                 }
             }
         }
+        println!("----------------");
     }
 
     fn get_connected_nodes(&self, node: usize) -> Vec<usize> {
@@ -123,9 +121,16 @@ impl Graph {
         }
         accum_flow
     }
+    fn score(&self, node: usize, moves_left: i32) -> i32 {
+        let node = &self.nodes[node];
+        if node.open {
+            return 0;
+        }
+        return node.flow_rate * moves_left;
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Choice {
     Node(String),
     Valve,
@@ -182,7 +187,7 @@ fn main() {
         let name = words[1].to_string();
 
         let mut me = graph.get_node_by_name(&name);
-        let mut menumber  ;
+        let mut menumber;
 
         match me {
             Some(n) => {
@@ -197,11 +202,11 @@ fn main() {
 
         for i in 11..words.len() {
             let nodename = words[i].to_string();
-        if nodename == "" {
-            continue;
-        }
+            if nodename == "" {
+                continue;
+            }
             let mut node = graph.get_node_by_name(&nodename);
-            let mut nodenumber ;
+            let mut nodenumber;
             match node {
                 Some(n) => {
                     nodenumber = n;
@@ -215,4 +220,37 @@ fn main() {
         }
     }
     graph.print_graph();
+
+    const MAX_MOVES: usize = 30;
+    let mut current_node = graph.get_node_by_name("AA").unwrap();
+    let mut game = Vec::<Choice>::new();
+
+    for i in 1..MAX_MOVES {
+        dbg!(i);
+        let mut best_score = graph.score(current_node, (MAX_MOVES - i) as i32); //open this one
+        dbg!(best_score);
+        let mut best_move = Choice::Valve;
+        let mut name = graph.nodes[current_node].name.clone();
+        for node in graph.get_connected_nodes(current_node) {
+            let mut score = graph.score(node, (MAX_MOVES - i) as i32);
+            let name_conn = graph.nodes[node].name.clone();
+            dbg!(&name);
+            dbg!(score);
+            if score > best_score {
+                best_score = score;
+                best_move = Choice::Node(name_conn.clone());
+                name = name_conn.clone();
+            }
+        }
+        game.push(best_move.clone());
+        dbg!(&best_move);
+        match best_move {
+            Choice::Node(node) => {
+                current_node = graph.get_node_by_name(&name).unwrap();
+            }
+            Choice::Valve => {
+                graph.open_node(current_node);
+            }
+        }
+    }
 }
